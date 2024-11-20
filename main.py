@@ -2,44 +2,46 @@ import streamlit as st
 from PIL import Image
 import requests
 import io
-
-# Function to convert image to sketch using LightX API
-def convert_to_sketch(image, api_key):
-    url = "https://api.lightxeditor.com/photo-to-sketch"
+# Define the function to apply the cartoon effect
+def apply_cartoon_effect(image_data, api_key):
+    url = 'https://api.lightxeditor.com/external/api/v1/cartoon'
     headers = {
-        "Authorization": f"Bearer {api_key}"
+        'x-api-key': api_key,  # Replace with your actual API key
+        'Content-Type': 'application/json'
     }
-    image_bytes = io.BytesIO()
-    image.save(image_bytes, format='PNG')
-    image_bytes = image_bytes.getvalue()
-    
-    response = requests.post(url, headers=headers, files={"file": ("image.png", image_bytes, "image/png")})
-    
-    if response.status_code == 200:
-        sketch_image = Image.open(io.BytesIO(response.content))
-        return sketch_image
-    else:
-        st.error(f"Failed to convert image to sketch. Error: {response.json().get('error', 'Unknown error')}")
-        return None
+    files = {'image': image_data}
+    data = {
+        "styleImageUrl": "https://ai.flux-image.com/flux/d4533a74-9d35-4683-8a05-18c0b646ad36.jpg",  # Replace with the URL of your input style image
+        "textPrompt": "Cartoon style with vibrant colors and exaggerated features"  # Replace with your specific input prompt
+    }
+    response = requests.post(url, headers=headers, files=files, data=data)
+    return response
 
-# Streamlit app
-st.title("AI-based Sketch Image Converter")
+# Streamlit app layout
+st.title("Cartoon Effect App")
 
-# Upload image
+# Input fields
 uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
-if uploaded_file is not None:
-    # Open and display the uploaded image
-    image = Image.open(uploaded_file)
-    st.image(image, caption='Uploaded Image', use_column_width=True)
+api_key = "e456a84c544e4576bd71888f4e8f7d98_fd59cad6cf8848e98b2b28abf80b12f4_andoraitools"
 
-    # Get API key from user input
-    api_key = st.text_input("Enter your LightX API key")
-
-    if api_key:
-        # Convert the image to sketch
-        sketch_image = convert_to_sketch(image, api_key)
-
-        if sketch_image:
-            # Display the sketch image
-            st.image(sketch_image, caption='Sketch Image', use_column_width=True)
+# Button to trigger the cartoon effect
+if st.button("Apply Cartoon Effect"):
+    if uploaded_file is not None:
+        image_data = uploaded_file.read()
+        response = apply_cartoon_effect(image_data, api_key)
+        
+        # Check if the request was successful
+        if response.status_code == 200:
+            st.success("Request was successful!")
+            response_json = response.json()
+            output_url = response_json.get("body", {}).get("output")
+            if output_url:
+                st.image(output_url, caption="Cartoon Effect Image")
+            else:
+                st.error("Output URL not found in the response.")
+        else:
+            st.error(f"Request failed with status code: {response.status_code}")
+            st.text(response.text)
+    else:
+        st.error("Please upload an image.")
