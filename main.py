@@ -11,7 +11,7 @@ def convert_to_doodle(image):
     # Invert edges
     inverted_edges = cv2.bitwise_not(edges)
     # Blend the original grayscale image with the inverted edges
-    doodle_image = cv2.addWeighted(gray_image, 0.5, inverted_edges, 0.5, 0)
+    doodle_image = cv2.addWeighted(gray_image, 0.7, inverted_edges, 0.3, 0)
     return doodle_image
 
 def convert_to_pencil_sketch(image):
@@ -62,7 +62,7 @@ if uploaded_file is not None:
     file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
     image = cv2.imdecode(file_bytes, 1)
     
-    effect = st.selectbox("Choose an effect", ["Cartoon","Doodle", "Pencil Sketch", "Sepia", "HDR", "Negative", "Emboss"])
+    effect = st.selectbox("Choose an effect", ["Doodle","Cartoon", "Pencil Sketch", "Sepia", "HDR", "Negative", "Emboss"])
     
     if effect == "Cartoon":
         output_image = convert_to_cartoon(image)
