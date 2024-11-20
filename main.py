@@ -3,6 +3,22 @@ import cv2
 import numpy as np
 from PIL import Image
 
+def remove_background(image):
+    # Convert to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # Apply a binary threshold to get a binary image
+    _, binary = cv2.threshold(gray, 150, 255, cv2.THRESH_BINARY_INV)
+    # Find contours
+    contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # Create a mask with the same dimensions as the image
+    mask = np.zeros_like(image)
+    # Draw the contours on the mask
+    cv2.drawContours(mask, contours, -1, (255, 255, 255), thickness=cv2.FILLED)
+    # Bitwise-and to get the foreground
+    foreground = cv2.bitwise_and(image, mask)
+    return foreground, mask
+
+
 def convert_to_doodle(image):
     # Remove background
     foreground, mask = remove_background(image)
