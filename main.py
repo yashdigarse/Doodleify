@@ -1,6 +1,6 @@
+import streamlit as st
 import cv2
 import numpy as np
-import streamlit as st
 from PIL import Image
 
 def remove_background(image):
@@ -42,7 +42,7 @@ def convert_to_doodle(image):
     combined_image = cv2.add(combined_image, doodle_image)
     return combined_image
 
-st.title("Photo Converter")
+st.title("Photo to Doodle Converter")
 
 uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
@@ -50,22 +50,9 @@ if uploaded_file is not None:
     file_bytes = np.asarray(bytearray(uploaded_file.read()), dtype=np.uint8)
     image = cv2.imdecode(file_bytes, 1)
     
-    effect = st.selectbox("Choose an effect", ["Cartoon", "Doodle", "Pencil Sketch", "Sepia", "HDR", "Negative", "Emboss"])
+    # Convert the image to doodle
+    doodle_image = convert_to_doodle(image)
     
-    if effect == "Cartoon":
-        output_image = convert_to_cartoon(image)
-    elif effect == "Doodle":
-        output_image = convert_to_doodle(image)
-    elif effect == "Pencil Sketch":
-        output_image = convert_to_pencil_sketch(image)
-    elif effect == "Sepia":
-        output_image = convert_to_sepia(image)
-    elif effect == "HDR":
-        output_image = convert_to_hdr(image)
-    elif effect == "Negative":
-        output_image = convert_to_negative(image)
-    elif effect == "Emboss":
-        output_image = convert_to_emboss(image)
-    
+    # Display the original and doodle images
     st.image(image, caption='Original Image', use_column_width=True)
-    st.image(output_image, caption=f'{effect} Image', use_column_width=True)
+    st.image(doodle_image, caption='Doodle Image', use_column_width=True)
