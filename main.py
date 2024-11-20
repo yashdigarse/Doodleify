@@ -6,12 +6,16 @@ from PIL import Image
 def convert_to_doodle(image):
     # Convert to grayscale
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    # Edge detection
-    edges = cv2.Canny(gray_image, 100, 200)
+    # Apply Gaussian blur to reduce noise and detail
+    blurred_image = cv2.GaussianBlur(gray_image, (5, 5), 0)
+    # Edge detection using Canny
+    edges = cv2.Canny(blurred_image, 50, 150)
+    # Dilate edges to make them more pronounced
+    dilated_edges = cv2.dilate(edges, np.ones((3, 3), np.uint8), iterations=1)
     # Invert edges
-    inverted_edges = cv2.bitwise_not(edges)
+    inverted_edges = cv2.bitwise_not(dilated_edges)
     # Blend the original grayscale image with the inverted edges
-    doodle_image = cv2.addWeighted(gray_image, 0.7, inverted_edges, 0.3, 0)
+    doodle_image = cv2.bitwise_and(gray_image, gray_image, mask=inverted_edges)
     return doodle_image
 
 def convert_to_pencil_sketch(image):
