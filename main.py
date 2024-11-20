@@ -3,27 +3,27 @@ from PIL import Image
 import requests
 import io
 
-# Function to convert image to doodle using ClipDrop API
-def convert_to_doodle(image, api_key):
-    url = "https://clipdrop-api.co/sketch-to-image/v1"
+# Function to convert image to sketch using LightX API
+def convert_to_sketch(image, api_key):
+    url = "https://api.lightxeditor.com/photo-to-sketch"
     headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
+        "Authorization": f"Bearer {api_key}"
     }
     image_bytes = io.BytesIO()
     image.save(image_bytes, format='PNG')
     image_bytes = image_bytes.getvalue()
     
-    response = requests.post(url, headers=headers, files={"file": image_bytes})
+    response = requests.post(url, headers=headers, files={"file": ("image.png", image_bytes, "image/png")})
+    
     if response.status_code == 200:
-        doodle_image = Image.open(io.BytesIO(response.content))
-        return doodle_image
+        sketch_image = Image.open(io.BytesIO(response.content))
+        return sketch_image
     else:
-        st.error("Failed to convert image to doodle.")
+        st.error(f"Failed to convert image to sketch. Error: {response.json().get('error', 'Unknown error')}")
         return None
 
 # Streamlit app
-st.title("AI-based Doodle Image Converter")
+st.title("AI-based Sketch Image Converter")
 
 # Upload image
 uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
@@ -34,12 +34,12 @@ if uploaded_file is not None:
     st.image(image, caption='Uploaded Image', use_column_width=True)
 
     # Get API key from user input
-    api_key = st.text_input("Enter your ClipDrop API key")
+    api_key = st.text_input("Enter your LightX API key")
 
     if api_key:
-        # Convert the image to doodle
-        doodle_image = convert_to_doodle(image, api_key)
+        # Convert the image to sketch
+        sketch_image = convert_to_sketch(image, api_key)
 
-        if doodle_image:
-            # Display the doodle image
-            st.image(doodle_image, caption='Doodle Image', use_column_width=True)
+        if sketch_image:
+            # Display the sketch image
+            st.image(sketch_image, caption='Sketch Image', use_column_width=True)
