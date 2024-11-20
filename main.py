@@ -4,8 +4,10 @@ import numpy as np
 from PIL import Image
 
 def convert_to_doodle(image):
+    # Remove background
+    foreground, mask = remove_background(image)
     # Convert to grayscale
-    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    gray_image = cv2.cvtColor(foreground, cv2.COLOR_BGR2GRAY)
     # Apply Gaussian blur to reduce noise and detail
     blurred_image = cv2.GaussianBlur(gray_image, (5, 5), 0)
     # Edge detection using Canny
@@ -16,7 +18,14 @@ def convert_to_doodle(image):
     inverted_edges = cv2.bitwise_not(dilated_edges)
     # Blend the original grayscale image with the inverted edges
     doodle_image = cv2.bitwise_and(gray_image, gray_image, mask=inverted_edges)
-    return doodle_image
+    # Convert doodle image to 3 channels
+    doodle_image = cv2.cvtColor(doodle_image, cv2.COLOR_GRAY2BGR)
+    # Add a new background (white background in this case)
+    new_background = np.ones_like(image) * 255
+    # Combine the doodle foreground with the new background
+    combined_image = cv2.bitwise_and(new_background, new_background, mask=cv2.bitwise_not(mask))
+    combined_image = cv2.add(combined_image, doodle_image)
+    return combined_image
 
 def convert_to_pencil_sketch(image):
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
