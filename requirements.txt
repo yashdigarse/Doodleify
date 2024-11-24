@@ -1,4 +1,3 @@
-numpy
-easygui
-imageio
-tinkter
+streamlit 
+requests 
+pillow
