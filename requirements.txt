@@ -1,3 +1,5 @@
-streamlit 
-requests 
-pillow
+streamlit
+opencv-python
+transformers
+Pillow
+numpy
