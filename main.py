@@ -1,42 +1,66 @@
 import streamlit as st
+import cv2
+import numpy as np
 from PIL import Image
-import requests
 import io
-# Define the function to apply the cartoon effect
-def apply_cartoon_effect(image_data, api_key):
-    url = 'https://api.rapidapi.com/cartoon-generator'
-    headers = {
-        'x-rapidapi-key': api_key,  # Replace with your actual API key
-        'x-rapidapi-host': 'api.rapidapi.com',
-        'Content-Type': 'application/octet-stream'
-    }
-    response = requests.post(url, headers=headers, data=image_data)
-    return response
+from rembg import remove
 
-# Streamlit app layout
-st.title("AI Cartoon Generator")
+def cartoonize(img):
+    # Convert to grayscale and apply median blur
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    gray = cv2.medianBlur(gray, 5)
+    
+    # Detect edges and threshold
+    edges = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 9, 9)
+    
+    # Apply bilateral filter for color smoothing
+    color = cv2.bilateralFilter(img, 9, 300, 300)
+    
+    # Combine color image with edges
+    cartoon = cv2.bitwise_and(color, color, mask=edges)
+    
+    return cartoon
 
-# Input fields
+st.title("Image Cartoonifier")
+
 uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
-api_key = "58c8cb483emshb1f84eba4a5f694p1ab7cbjsn87bda417be10"
 
-# Button to trigger the cartoon effect
-if st.button("Generate Cartoon"):
-    if uploaded_file is not None:
-        image_data = uploaded_file.read()
-        response = apply_cartoon_effect(image_data, api_key)
-        
-        # Check if the request was successful
-        if response.status_code == 200:
-            st.success("Request was successful!")
-            response_json = response.json()
-            output_url = response_json.get("output")
-            if output_url:
-                st.image(output_url, caption="Cartoon Effect Image")
-            else:
-                st.error("Output URL not found in the response.")
-        else:
-            st.error(f"Request failed with status code: {response.status_code}")
-            st.text(response.text)
-    else:
-        st.error("Please upload an image.")
+if uploaded_file is not None:
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Original Image", use_column_width=True)
+    
+    # Background removal
+    remove_bg = st.checkbox("Remove Background")
+    if remove_bg:
+        bg_removed = remove(image)
+        st.image(bg_removed, caption="Background Removed", use_column_width=True)
+        image = bg_removed
+    
+    # Convert PIL Image to numpy array for OpenCV processing
+    img_array = np.array(image)
+    
+    # Convert RGBA to RGB if necessary
+    if img_array.shape[2] == 4:
+        img_array = cv2.cvtColor(img_array, cv2.COLOR_RGBA2RGB)
+    
+    # Cartoonize
+    cartoon = cartoonize(img_array)
+    
+    st.image(cartoon, caption="Cartoonized Image", use_column_width=True)
+    
+    # Convert the cartoonized image back to PIL Image for download
+    cartoon_pil = Image.fromarray(cv2.cvtColor(cartoon, cv2.COLOR_BGR2RGB))
+    
+    # Create a BytesIO object for downloading
+    buf = io.BytesIO()
+    cartoon_pil.save(buf, format="PNG")
+    byte_im = buf.getvalue()
+    
+    st.download_button(
+        label="Download Cartoonized Image",
+        data=byte_im,
+        file_name="cartoonized_image.png",
+        mime="image/png"
+    )
+
+st.write("Note: This app uses OpenCV for cartoonization and rembg for background removal.")
