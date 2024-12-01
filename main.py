@@ -1,50 +1,37 @@
 import streamlit as st
 from PIL import Image
-import cv2
-import numpy as np
-import tempfile
+import torch
+from torchvision import transforms
+from diffusers import StableDiffusionImg2ImgPipeline
 
-def cartoonize_image(img, ksize, sigma_color, sigma_space):
-    # Convert image to grayscale
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    # Apply median blur
-    gray = cv2.medianBlur(gray, 5)
-    # Detect edges using adaptive thresholding
-    edges = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 9, 9)
-    # Apply bilateral filter to smoothen the image
-    color = cv2.bilateralFilter(img, ksize, sigma_color, sigma_space)
-    # Combine edges and color image
-    cartoon = cv2.bitwise_and(color, color, mask=edges)
-    return cartoon
+# Load your model
+@st.cache_resource
+def load_model():
+    pipe = StableDiffusionImg2ImgPipeline.from_pretrained("CompVis/stable-diffusion-v1-4")
+    pipe.to("cuda" if torch.cuda.is_available() else "cpu")
+    return pipe
 
-st.title("Advanced Pixar Style Image Converter")
-st.write("Upload an image to convert it to Pixar style with adjustable settings")
+# Title and Instructions
+st.title("Image-to-Image Model Demo")
+st.write("Upload an image and apply transformations using a model.")
 
-uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+# Upload Image
+uploaded_file = st.file_uploader("Choose an image", type=["jpg", "png", "jpeg"])
+if uploaded_file:
+    image = Image.open(uploaded_file).convert("RGB")
+    st.image(image, caption="Uploaded Image", use_column_width=True)
 
-if uploaded_file is not None:
-    # Read the uploaded image
-    image = Image.open(uploaded_file)
-    img_array = np.array(image)
-    
-    st.sidebar.title("Adjust Cartoon Effect")
-    ksize = st.sidebar.slider("Kernel Size", 1, 15, 9, step=2)
-    sigma_color = st.sidebar.slider("Sigma Color", 100, 500, 300)
-    sigma_space = st.sidebar.slider("Sigma Space", 100, 500, 300)
-    
-    # Convert the image to Pixar style
-    cartoon_image = cartoonize_image(img_array, ksize, sigma_color, sigma_space)
-    
-    # Display the original and cartoon images side by side
-    st.image([img_array, cartoon_image], caption=['Original Image', 'Pixar Style Image'], use_column_width=True)
-    
-    # Provide a download button for the cartoon image
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmpfile:
-        cartoon_pil = Image.fromarray(cartoon_image)
-        cartoon_pil.save(tmpfile.name)
-        st.download_button(
-            label="Download Pixar Style Image",
-            data=tmpfile,
-            file_name="pixar_style_image.png",
-            mime="image/png"
-        )
+    # Parameters
+    st.subheader("Modify Parameters")
+    strength = st.slider("Transformation Strength", 0.1, 1.0, 0.5)
+
+    # Transform the Image
+    if st.button("Transform Image"):
+        st.write("Applying transformation...")
+
+        pipe = load_model()
+        output = pipe(prompt="a fantasy painting of the uploaded image",
+                      image=image,
+                      strength=strength).images[0]
+
+        st.image(output, caption="Transformed Image", use_column_width=True)
