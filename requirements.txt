@@ -1,5 +1,6 @@
 streamlit
-transformers
 diffusers
+transformers
+torch
 Pillow
 requests
