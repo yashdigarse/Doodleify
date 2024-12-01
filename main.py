@@ -1,27 +1,33 @@
 import streamlit as st
 from PIL import Image
+import cv2
+import numpy as np
 
-def convert_to_minecraft_style(image, size=(16, 16)):
-    # Resize the image to 16x16
-    image = image.resize(size, Image.Resampling.NEAREST)
-    # Scale it back up for better visibility
-    return image.resize((size[0] * 20, size[1] * 20), Image.Resampling.NEAREST)
+def cartoonize_image(img):
+    # Convert image to grayscale
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # Apply median blur
+    gray = cv2.medianBlur(gray, 5)
+    # Detect edges using adaptive thresholding
+    edges = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 9, 9)
+    # Apply bilateral filter to smoothen the image
+    color = cv2.bilateralFilter(img, 9, 300, 300)
+    # Combine edges and color image
+    cartoon = cv2.bitwise_and(color, color, mask=edges)
+    return cartoon
 
-st.title("Minecraft 16x16 Character Converter")
+st.title("Pixar Style Image Converter")
+st.write("Upload an image to convert it to Pixar style")
 
-# File uploader
-uploaded_file = st.file_uploader("Upload an image", type=["png", "jpg", "jpeg"])
+uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
-if uploaded_file:
-    # Open the uploaded image
+if uploaded_file is not None:
+    # Read the uploaded image
     image = Image.open(uploaded_file)
-    st.image(image, caption="Original Image", use_column_width=True)
-
-    # Convert to Minecraft style
-    minecraft_image = convert_to_minecraft_style(image)
-
-    # Display the result
-    st.image(minecraft_image, caption="Minecraft 16x16 Style", use_column_width=True)
-
-    # Download button for the image
-    img_bytes = minecraft_image.tobytes
+    img_array = np.array(image)
+    
+    # Convert the image to Pixar style
+    cartoon_image = cartoonize_image(img_array)
+    
+    # Display the original and cartoon images side by side
+    st.image([img_array, cartoon_image], caption=['Original Image', 'Pixar Style Image'], use_column_width=True)
