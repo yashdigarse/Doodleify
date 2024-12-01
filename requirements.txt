@@ -1,8 +1,5 @@
 streamlit
-Pillow
-torch
-torchvision
-diffusers
 transformers
-scipy
-numpy
+diffusers
+Pillow
+requests

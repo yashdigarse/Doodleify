@@ -1,37 +1,22 @@
 import streamlit as st
+from transformers import pipeline
 from PIL import Image
-import torch
-from torchvision import transforms
-from diffusers import StableDiffusionImg2ImgPipeline
+import requests
+from io import BytesIO
 
-# Load your model
-@st.cache_resource
-def load_model():
-    pipe = StableDiffusionImg2ImgPipeline.from_pretrained("CompVis/stable-diffusion-v1-4")
-    pipe.to("cuda" if torch.cuda.is_available() else "cpu")
-    return pipe
+# Load a pre-trained image-to-image model from Hugging Face
+model = pipeline("image-to-image", model="CompVis/stable-diffusion-v1-4")
 
-# Title and Instructions
-st.title("Image-to-Image Model Demo")
-st.write("Upload an image and apply transformations using a model.")
+st.title('Image-to-Image Conversion with Hugging Face and Streamlit')
 
-# Upload Image
-uploaded_file = st.file_uploader("Choose an image", type=["jpg", "png", "jpeg"])
-if uploaded_file:
-    image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, caption="Uploaded Image", use_column_width=True)
-
-    # Parameters
-    st.subheader("Modify Parameters")
-    strength = st.slider("Transformation Strength", 0.1, 1.0, 0.5)
-
-    # Transform the Image
-    if st.button("Transform Image"):
-        st.write("Applying transformation...")
-
-        pipe = load_model()
-        output = pipe(prompt="a fantasy painting of the uploaded image",
-                      image=image,
-                      strength=strength).images[0]
-
-        st.image(output, caption="Transformed Image", use_column_width=True)
+uploaded_file = st.file_uploader("Choose an image...", type="jpg")
+if uploaded_file is not None:
+    image = Image.open(uploaded_file)
+    st.image(image, caption='Uploaded Image.', use_column_width=True)
+    
+    # Convert the image using the model
+    result = model(image)
+    
+    # Display the output image
+    output_image = Image.open(BytesIO(result[0]["image"]))
+    st.image(output_image, caption='Output Image.', use_column_width=True)
